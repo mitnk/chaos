@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <string.h>
+#include <dbg.h>
+
+
+int normal_copy(char *from, char *to, int count)
+{
+    int i = 0;
+
+    for(i = 0; i < count; i++) {
+        to[i] = from[i];
+    }
+
+    return i;
+}
+
+int duffs_device(char *from, char *to, int count)
+{
+    int n = (count + 3) / 4;
+    do {
+        *to++ = *from++;
+        *to++ = *from++;
+        *to++ = *from++;
+        *to++ = *from++;
+    } while(--n > 0);
+
+    return count;
+}
+
+void
+test_switch()
+{
+    int n = 3;
+    switch (n) {
+        case 2:
+            log_info("case-2: n = %d", n);
+        case 1:
+            log_info("case-1: n = %d", n);
+        case 3: {
+            log_info("case-3: n = %d", n);
+            break;
+        }
+        case 4:
+            log_info("case-4: n = %d", n);
+    }
+}
+
+int zeds_device(char *from, char *to, int count)
+{
+    {
+        int n = (count + 7) / 8;
+
+        switch(count % 8) {
+            case 0:
+            again: *to++ = *from++;
+
+            case 7: *to++ = *from++;
+            case 6: *to++ = *from++;
+            case 5: *to++ = *from++;
+            case 4: *to++ = *from++;
+            case 3: *to++ = *from++;
+            case 2: *to++ = *from++;
+            case 1: *to++ = *from++;
+                    if(--n > 0) goto again;
+        }
+    }
+
+    return count;
+}
+
+int valid_copy(char *data, int count, char expects)
+{
+    int i = 0;
+    for(i = 0; i < count; i++) {
+        if(data[i] != expects) {
+            log_err("[%d] %c != %c", i, data[i], expects);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+
+int main(int argc, char *argv[])
+{
+    char from[1000] = {'a'};
+    log_info("from[10] = '%c'[%d]", from[10], from[10]);
+    char to[1000] = {'c'};
+    int rc = 0;
+
+    // setup the from to have some stuff
+    memset(from, 'x', 1000);
+    log_info("from[10] = '%c'[%d]", from[10], from[10]);
+    // set it to a failure mode
+    memset(to, 'y', 1000);
+    log_info("to[10] = '%c'[%d]", to[10], to[10]);
+    check(valid_copy(to, 1000, 'y'), "Not initialized right.");
+
+    // use normal copy to 
+    rc = normal_copy(from, to, 1000);
+    log_info("to[10] = '%c'[%d]", to[10], to[10]);
+    check(rc == 1000, "Normal copy failed: %d", rc);
+    check(valid_copy(to, 1000, 'x'), "Normal copy failed.");
+
+    // reset
+    memset(to, 'y', 1000);
+    log_info("to[10] = '%c'[%d]", to[10], to[10]);
+
+    // duffs version
+    log_info("from[10] = '%c'[%d]", from[10], from[10]);
+    rc = duffs_device(from, to, 1000);
+    log_info("to[10] = '%c'[%d]", to[10], to[10]);
+    check(rc == 1000, "Duff's device failed: %d", rc);
+    check(valid_copy(to, 1000, 'x'), "Duff's device failed copy.");
+
+    // reset
+    memset(to, 'y', 1000);
+
+    // my version
+    rc = zeds_device(from, to, 1000);
+    check(rc == 1000, "Zed's device failed: %d", rc);
+    check(valid_copy(to, 1000, 'x'), "Zed's device failed copy.");
+
+    test_switch();
+
+    return 0;
+error:
+    return 1;
+}
